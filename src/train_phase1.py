@@ -58,7 +58,10 @@ def main():
         view1_batch = []
         view2_batch = []
         for item in batch:
-            view1, view2 = item["image"]
+            # The datasets (KaggleAerial/Landcover) assume transform returns (image, mask).
+            # For SimSiam, it returns (view1, view2). So view1 is in 'image' and view2 is in 'mask'.
+            view1 = item["image"]
+            view2 = item["mask"]
             view1_batch.append(view1)
             view2_batch.append(view2)
         return torch.stack(view1_batch), torch.stack(view2_batch)
