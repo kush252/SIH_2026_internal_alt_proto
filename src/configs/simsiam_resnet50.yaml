@@ -29,7 +29,7 @@ AUGMENTATION:
   
 TRAINING:
   epochs: 100
-  batch_size: 8
+  batch_size: 32
   # SimSiam base lr is often lr=0.05 * batch_size/256 for SGD. For AdamW we keep it similar to SimMIM or small.
   learning_rate: 0.05
   weight_decay: 1e-4
