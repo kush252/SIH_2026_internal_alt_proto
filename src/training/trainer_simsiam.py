@@ -20,12 +20,12 @@ class SimSiamTrainer:
             self.model = nn.DataParallel(self.model)
         
         # SimSiam usually uses SGD
-        init_lr = config.TRAINING.learning_rate * config.TRAINING.batch_size / 256
+        init_lr = float(config.TRAINING.learning_rate) * float(config.TRAINING.batch_size) / 256.0
         self.optimizer = torch.optim.SGD(
             self.model.parameters(),
             init_lr,
-            momentum=config.TRAINING.momentum,
-            weight_decay=config.TRAINING.weight_decay
+            momentum=float(config.TRAINING.momentum),
+            weight_decay=float(config.TRAINING.weight_decay)
         )
         
         # Cosine Annealing
