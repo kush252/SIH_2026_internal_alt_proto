@@ -29,14 +29,14 @@ AUGMENTATION:
   
 TRAINING:
   epochs: 100
-  batch_size: 64
+  batch_size: 8
   # SimSiam base lr is often lr=0.05 * batch_size/256 for SGD. For AdamW we keep it similar to SimMIM or small.
   learning_rate: 0.05
   weight_decay: 1e-4
   momentum: 0.9
   warmup_epochs: 0
-  accumulation_steps: 1
-  use_amp: true
+  accumulation_steps: 2
+  use_amp: false
   clip_grad: -1.0 # -1 means no clip
   num_workers: 4
   
