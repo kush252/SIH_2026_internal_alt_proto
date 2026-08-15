@@ -1,0 +1,9 @@
+torch
+torchvision
+timm
+rasterio
+pillow
+pyyaml
+numpy
+matplotlib
+tensorboard

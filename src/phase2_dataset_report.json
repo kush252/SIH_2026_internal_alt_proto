@@ -1,0 +1,187 @@
+{
+    "images_dir_exists": true,
+    "masks_dir_exists": true,
+    "binary_masks_dir_exists": true,
+    "images_summary": {
+        "count": 690,
+        "extensions": [
+            ".png"
+        ],
+        "sample": "patch_1.png"
+    },
+    "masks_summary": {
+        "count": 690,
+        "extensions": [
+            ".png"
+        ],
+        "sample": "patch_1.png"
+    },
+    "binary_masks_summary": {
+        "count": 690,
+        "extensions": [
+            ".png"
+        ],
+        "sample": "patch_1.png"
+    },
+    "sample_images": [
+        {
+            "name": "patch_1.png",
+            "shape": [
+                4,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 0.0,
+            "max": 255.0,
+            "unique_vals": "too many"
+        },
+        {
+            "name": "patch_100.png",
+            "shape": [
+                4,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 0.0,
+            "max": 255.0,
+            "unique_vals": "too many"
+        },
+        {
+            "name": "patch_1001.png",
+            "shape": [
+                4,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 47.0,
+            "max": 255.0,
+            "unique_vals": "too many"
+        }
+    ],
+    "sample_masks": [
+        {
+            "name": "patch_1.png",
+            "shape": [
+                3,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 0.0,
+            "max": 255.0,
+            "unique_vals": [
+                0,
+                48,
+                85,
+                110,
+                200,
+                217,
+                255
+            ]
+        },
+        {
+            "name": "patch_100.png",
+            "shape": [
+                3,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 0.0,
+            "max": 255.0,
+            "unique_vals": [
+                0,
+                48,
+                85,
+                110,
+                217,
+                255
+            ]
+        },
+        {
+            "name": "patch_1001.png",
+            "shape": [
+                4,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 0.0,
+            "max": 255.0,
+            "unique_vals": [
+                0,
+                48,
+                85,
+                110,
+                217,
+                238,
+                255
+            ]
+        }
+    ],
+    "sample_binary_masks": [
+        {
+            "name": "patch_1.png",
+            "shape": [
+                4,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 1.0,
+            "max": 255.0,
+            "unique_vals": [
+                1,
+                36,
+                68,
+                84,
+                231,
+                253,
+                255
+            ]
+        },
+        {
+            "name": "patch_100.png",
+            "shape": [
+                4,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 1.0,
+            "max": 255.0,
+            "unique_vals": [
+                1,
+                36,
+                68,
+                84,
+                231,
+                253,
+                255
+            ]
+        },
+        {
+            "name": "patch_1001.png",
+            "shape": [
+                4,
+                1024,
+                1024
+            ],
+            "dtype": "uint8",
+            "min": 1.0,
+            "max": 255.0,
+            "unique_vals": [
+                1,
+                36,
+                68,
+                84,
+                231,
+                253,
+                255
+            ]
+        }
+    ]
+}

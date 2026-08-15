@@ -1,0 +1,46 @@
+DATA:
+  datasets:
+    kaggle:
+      path: "d:/Kush/2nd Year/Hackathons/SIH/data/aerial_imagery_semantic"
+      weight: 0.5
+      patch_size: 224 # Original is 256x256, we'll crop/resize to 224
+    landcover:
+      path: "d:/Kush/2nd Year/Hackathons/SIH/data/landcover"
+      weight: 0.5
+      patch_size: 224 # We'll extract 224x224 patches from the GeoTIFFs
+      stride: 112 # 50% overlap for patch extraction
+  image_size: 224
+  in_channels: 3
+
+MODEL:
+  name: "swin_tiny_patch4_window7_224"
+  pretrained: true
+  patch_size: 4
+  window_size: 7
+  embed_dim: 96
+  depths: [2, 2, 6, 2]
+  num_heads: [3, 6, 12, 24]
+  
+SIMMIM:
+  mask_ratio: 0.6
+  mask_patch_size: 32 # size of mask patch, often 32x32 for SimMIM
+
+AUGMENTATION:
+  color_jitter: 0.1
+  scale_range: [0.8, 1.2]
+  
+TRAINING:
+  epochs: 100
+  batch_size: 64 # Needs to fit in GPU
+  learning_rate: 0.0005
+  weight_decay: 0.05
+  warmup_epochs: 5
+  accumulation_steps: 1
+  use_amp: true
+  clip_grad: 5.0
+  num_workers: 4
+  
+SYSTEM:
+  seed: 42
+  device: "cuda"
+  output_dir: "outputs"

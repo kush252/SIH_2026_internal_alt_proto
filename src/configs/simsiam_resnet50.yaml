@@ -1,0 +1,46 @@
+DATA:
+  datasets:
+    kaggle:
+      path: "d:/Kush/2nd Year/Hackathons/SIH/data/aerial_imagery_semantic"
+      weight: 0.5
+      patch_size: 224
+    landcover:
+      path: "d:/Kush/2nd Year/Hackathons/SIH/data/landcover"
+      weight: 0.5
+      patch_size: 224
+      stride: 112
+  image_size: 224
+  in_channels: 3
+
+MODEL:
+  encoder:
+    name: "resnet50"
+    pretrained: true
+    
+SSL:
+  method: "simsiam"
+  projector_dim: 2048
+  projector_hidden_dim: 2048
+  predictor_dim: 512
+
+AUGMENTATION:
+  color_jitter: 0.4
+  scale_range: [0.2, 1.0]
+  
+TRAINING:
+  epochs: 100
+  batch_size: 64
+  # SimSiam base lr is often lr=0.05 * batch_size/256 for SGD. For AdamW we keep it similar to SimMIM or small.
+  learning_rate: 0.05
+  weight_decay: 1e-4
+  momentum: 0.9
+  warmup_epochs: 0
+  accumulation_steps: 1
+  use_amp: true
+  clip_grad: -1.0 # -1 means no clip
+  num_workers: 4
+  
+SYSTEM:
+  seed: 42
+  device: "cuda"
+  output_dir: "outputs"

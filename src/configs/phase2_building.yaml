@@ -1,0 +1,50 @@
+DATA:
+  dataset_path: "d:/Kush/2nd Year/Hackathons/SIH/data/kaggle_svamitva/Svamitva/FilteredData"
+  image_size: 512
+  
+  classes:
+    background: [0, 0, 0]
+    building: [255, 255, 255] # Adjust based on your binary mask color
+
+MODEL:
+  output_stride: 16
+  encoder:
+    name: "resnet50"
+    pretrained: false  # Will be loaded from Phase 1 checkpoint
+    checkpoint_path: "d:/Kush/2nd Year/Hackathons/SIH_alt_archi/src/outputs/phase1_simsiam_encoder.pt"
+  
+  decoder:
+    name: "deeplabv3plus"
+
+AUGMENTATION:
+  hflip_prob: 0.5
+  vflip_prob: 0.5
+  random_crop: true
+  color_jitter: 0.1
+
+TRAINING:
+  epochs: 100
+  batch_size: 8
+  num_workers: 4
+  use_amp: false
+  clip_grad: 0.05
+  accumulation_steps: 2
+
+OPTIMIZER:
+  encoder_lr: 1e-5
+  decoder_lr: 1e-4
+  head_lr: 1e-4
+  weight_decay: 0.05
+  warmup_epochs: 5
+
+LOSS:
+  weights:
+    building: 1.0
+  bce_weight: 1.0
+  dice_weight: 1.0
+  boundary_weight: 1.0
+
+SYSTEM:
+  seed: 42
+  device: "cuda"
+  output_dir: "outputs_phase2_building"
