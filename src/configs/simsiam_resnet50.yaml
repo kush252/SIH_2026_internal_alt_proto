@@ -36,7 +36,7 @@ TRAINING:
   momentum: 0.9
   warmup_epochs: 0
   accumulation_steps: 2
-  use_amp: false
+  use_amp: true
   clip_grad: -1.0 # -1 means no clip
   num_workers: 4
   

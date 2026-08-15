@@ -34,7 +34,10 @@ class SimSiamTrainer:
             T_max=config.TRAINING.epochs * len(dataloader)
         )
         
-        self.scaler = torch.cuda.amp.GradScaler(enabled=config.TRAINING.use_amp)
+        try:
+            self.scaler = torch.amp.GradScaler('cuda', enabled=config.TRAINING.use_amp)
+        except AttributeError:
+            self.scaler = torch.cuda.amp.GradScaler(enabled=config.TRAINING.use_amp)
         self.writer = SummaryWriter(log_dir=os.path.join(output_dir, "logs"))
         
         self.current_epoch = 0
@@ -61,7 +64,13 @@ class SimSiamTrainer:
                 view1 = view1.to(self.device)
                 view2 = view2.to(self.device)
                 
-                with torch.cuda.amp.autocast(enabled=self.config.TRAINING.use_amp):
+                # Try/except block to handle both new and old PyTorch versions
+                try:
+                    amp_context = torch.amp.autocast('cuda', enabled=self.config.TRAINING.use_amp)
+                except AttributeError:
+                    amp_context = torch.cuda.amp.autocast(enabled=self.config.TRAINING.use_amp)
+                    
+                with amp_context:
                     loss = self.model(view1, view2)
                     
                     if loss.dim() > 0:

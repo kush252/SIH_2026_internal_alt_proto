@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--landcover_dir', type=str, help="Path to Landcover dataset (overrides config)")
     parser.add_argument('--output_dir', type=str, help="Path to save outputs (overrides config)")
     parser.add_argument('--resume', type=str, help="Path to checkpoint .pt file to resume training")
+    parser.add_argument('--batch_size', type=int, help="Override batch_size in config")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -34,6 +35,8 @@ def main():
         config.DATA.datasets.landcover.path = args.landcover_dir
     if args.output_dir:
         config.SYSTEM.output_dir = args.output_dir
+    if args.batch_size:
+        config.TRAINING.batch_size = args.batch_size
     
     set_seed(config.SYSTEM.seed)
     
