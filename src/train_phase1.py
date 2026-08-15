@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--output_dir', type=str, help="Path to save outputs (overrides config)")
     parser.add_argument('--resume', type=str, help="Path to checkpoint .pt file to resume training")
     parser.add_argument('--batch_size', type=int, help="Override batch_size in config")
+    parser.add_argument('--use_amp', type=lambda x: (str(x).lower() == 'true'), help="Override use_amp in config (True/False)")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -37,6 +38,8 @@ def main():
         config.SYSTEM.output_dir = args.output_dir
     if args.batch_size:
         config.TRAINING.batch_size = args.batch_size
+    if args.use_amp is not None:
+        config.TRAINING.use_amp = args.use_amp
     
     set_seed(config.SYSTEM.seed)
     
