@@ -84,15 +84,25 @@ def main():
     print("Initializing Model...")
     model = SimSiam(config)
     
-    trainer = SimSiamTrainer(
-        model=model,
-        dataloader=dataloader,
-        config=config,
-        output_dir=config.SYSTEM.output_dir,
-        resume_path=args.resume
-    )
-    
-    trainer.train()
+    try:
+        trainer.train()
+    except KeyboardInterrupt:
+        print("\n[!] Training interrupted by user!")
+        print("Rescuing encoder weights directly from memory...")
+        import os
+        os.makedirs(config.SYSTEM.output_dir, exist_ok=True)
+        rescue_path = os.path.join(config.SYSTEM.output_dir, "phase1_simsiam_encoder.pt")
+        
+        encoder_state = {}
+        state_dict = trainer.model.state_dict()
+        for k, v in state_dict.items():
+            if 'encoder.' in k:
+                clean_key = k.split('encoder.')[-1]
+                encoder_state[clean_key] = v
+                
+        torch.save(encoder_state, rescue_path)
+        print(f"Successfully rescued {len(encoder_state)} tensors and saved to {rescue_path}!")
+        print("You can now safely proceed to Phase 2!")
 
 if __name__ == "__main__":
     main()
