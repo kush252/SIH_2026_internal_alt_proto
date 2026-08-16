@@ -84,6 +84,14 @@ def main():
     print("Initializing Model...")
     model = SimSiam(config)
     
+    trainer = SimSiamTrainer(
+        model=model,
+        dataloader=dataloader,
+        config=config,
+        output_dir=config.SYSTEM.output_dir,
+        resume_path=args.resume
+    )
+    
     try:
         trainer.train()
     except KeyboardInterrupt:
