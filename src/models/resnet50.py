@@ -22,7 +22,7 @@ class ResNet50Encoder(nn.Module):
         else:
             self.encoder = resnet50(weights=None, replace_stride_with_dilation=replace_stride_with_dilation)
             
-        in_channels = config.DATA.in_channels
+        in_channels = getattr(config.DATA, 'in_channels', 3)
         if in_channels != 3:
             # Adjust the first convolution layer to accept non-RGB inputs
             original_conv1 = self.encoder.conv1
