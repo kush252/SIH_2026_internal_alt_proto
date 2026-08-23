@@ -52,7 +52,7 @@ class SimSiamTrainer:
             )
             print(f"Resumed at epoch {self.current_epoch}, step {self.global_step}")
         
-    def train(self):
+    def train(self, max_steps=None):
         print(f"Starting training for {self.config.TRAINING.epochs} epochs on {self.device}")
         
         for epoch in range(self.current_epoch, self.config.TRAINING.epochs):
@@ -99,6 +99,10 @@ class SimSiamTrainer:
                     self.writer.add_scalar("Loss/train", loss_val, self.global_step)
                     self.writer.add_scalar("LR", self.scheduler.get_last_lr()[0], self.global_step)
                     print(f"Epoch [{epoch}/{self.config.TRAINING.epochs}] Step [{batch_idx}/{len(self.dataloader)}] Loss: {loss_val:.4f}")
+                    
+                if max_steps and self.global_step >= max_steps:
+                    print(f"Reached max_steps ({max_steps}). Stopping early.")
+                    return
             
             avg_epoch_loss = epoch_loss / len(self.dataloader)
             print(f"==== Epoch {epoch} Average Loss: {avg_epoch_loss:.4f} ====")

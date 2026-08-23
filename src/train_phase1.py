@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--resume', type=str, help="Path to checkpoint .pt file to resume training")
     parser.add_argument('--batch_size', type=int, help="Override batch_size in config")
     parser.add_argument('--use_amp', type=lambda x: (str(x).lower() == 'true'), help="Override use_amp in config (True/False)")
+    parser.add_argument('--max_steps', type=int, default=None, help="Stop training early after this many steps")
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -93,24 +94,25 @@ def main():
     )
     
     try:
-        trainer.train()
+        trainer.train(max_steps=args.max_steps)
     except KeyboardInterrupt:
         print("\n[!] Training interrupted by user!")
-        print("Rescuing encoder weights directly from memory...")
-        import os
-        os.makedirs(config.SYSTEM.output_dir, exist_ok=True)
-        rescue_path = os.path.join(config.SYSTEM.output_dir, "phase1_simsiam_encoder.pt")
         
-        encoder_state = {}
-        state_dict = trainer.model.state_dict()
-        for k, v in state_dict.items():
-            if 'encoder.' in k:
-                clean_key = k.split('encoder.')[-1]
-                encoder_state[clean_key] = v
-                
-        torch.save(encoder_state, rescue_path)
-        print(f"Successfully rescued {len(encoder_state)} tensors and saved to {rescue_path}!")
-        print("You can now safely proceed to Phase 2!")
+    print("Rescuing encoder weights directly from memory...")
+    import os
+    os.makedirs(config.SYSTEM.output_dir, exist_ok=True)
+    rescue_path = os.path.join(config.SYSTEM.output_dir, "phase1_simsiam_encoder.pt")
+    
+    encoder_state = {}
+    state_dict = trainer.model.state_dict()
+    for k, v in state_dict.items():
+        if 'encoder.' in k:
+            clean_key = k.split('encoder.')[-1]
+            encoder_state[clean_key] = v
+            
+    torch.save(encoder_state, rescue_path)
+    print(f"Successfully rescued {len(encoder_state)} tensors and saved to {rescue_path}!")
+    print("You can now safely proceed to Phase 2!")
 
 if __name__ == "__main__":
     main()
