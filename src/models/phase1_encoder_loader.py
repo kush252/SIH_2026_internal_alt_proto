@@ -1,15 +1,15 @@
 import torch
-from .old.swin_encoder import SwinEncoder
+from .resnet50 import ResNet50Encoder
 
 def load_phase1_encoder(config):
     """
-    Instantiates the Swin-T encoder and safely loads the Phase 1 SimMIM 
+    Instantiates the ResNet50 encoder and safely loads the Phase 1 SimSiam 
     pretrained weights, checking for compatibility.
     """
     encoder_cfg = config.MODEL.encoder
     
-    print(f"Instantiating Swin Encoder: {encoder_cfg.name}...")
-    encoder = SwinEncoder(config)
+    print(f"Instantiating ResNet50 Encoder: {encoder_cfg.name}...")
+    encoder = ResNet50Encoder(config)
     
     checkpoint_path = encoder_cfg.checkpoint_path
     print(f"Loading Phase 1 weights from: {checkpoint_path}")
