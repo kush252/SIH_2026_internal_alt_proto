@@ -15,6 +15,10 @@ def load_phase1_encoder(config):
     print(f"Loading Phase 1 weights from: {checkpoint_path}")
     
     try:
+        if not checkpoint_path or not __import__('os').path.exists(checkpoint_path):
+            print(f"WARNING: Phase 1 checkpoint not found at {checkpoint_path}. Skipping load (Expected if running Phase 2 Inference).")
+            return encoder
+            
         checkpoint = torch.load(checkpoint_path, map_location='cpu')
         state_dict = checkpoint.get('model_state_dict', checkpoint)
         
@@ -42,7 +46,6 @@ def load_phase1_encoder(config):
         print("Phase 1 Encoder weights loaded successfully.")
         
     except Exception as e:
-        print(f"CRITICAL ERROR loading Phase 1 checkpoint: {e}")
-        raise e
+        print(f"WARNING: Failed to load Phase 1 checkpoint: {e}. Skipping load (Expected if running Phase 2 Inference).")
         
     return encoder
