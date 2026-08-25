@@ -4,7 +4,8 @@ DATA:
   
   classes:
     background: [0, 0, 0]
-    road: [255, 255, 255]
+    road: [255, 0, 0]
+
 
 MODEL:
   output_stride: 16

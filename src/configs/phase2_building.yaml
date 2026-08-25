@@ -4,7 +4,7 @@ DATA:
   
   classes:
     background: [0, 0, 0]
-    building: [255, 255, 255] # Adjust based on your binary mask color
+    building: [0, 110, 255]
 
 MODEL:
   output_stride: 16

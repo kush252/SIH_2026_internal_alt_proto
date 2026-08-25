@@ -4,93 +4,116 @@ import numpy as np
 from PIL import Image
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
+import unittest.mock as mock
+import matplotlib.patches as mpatches
 
 # Adjust imports based on your Kaggle notebook structure
 from utils.config import load_config
 from models.task_heads import Phase2MultiTaskModel
 
-def visualize_prediction(image_path, model_path, config_path, device="cuda"):
-    """
-    Runs inference on a single image and plots the original image, 
-    the predicted mask, and the overlay side-by-side.
-    """
-    # 1. Load Configuration and Model
+def load_and_infer(model_path, config_path, img_tensor, map_location):
+    """Helper to load a specific model and get its logits for the image."""
     print(f"Loading configuration from {config_path}...")
     config = load_config(config_path)
     
-    # 2. Initialize Model and Load Weights
-    print("Initializing model and loading weights...")
-    model = Phase2MultiTaskModel(config)
+    print(f"Initializing model for {config_path}...")
+    with mock.patch('torch.load', return_value={}):
+        model = Phase2MultiTaskModel(config)
     
-    # Handle CPU vs CUDA loading
-    map_location = torch.device(device)
     checkpoint = torch.load(model_path, map_location=map_location)
-    
-    # If saved as an optimizer dictionary vs direct state_dict
     if 'model_state_dict' in checkpoint:
         model.load_state_dict(checkpoint['model_state_dict'])
     else:
         model.load_state_dict(checkpoint)
         
-    model.to(device)
+    model.to(map_location)
     model.eval()
     
-    # 3. Load and Preprocess Image
-    print(f"Loading image {image_path}...")
-    img = Image.open(image_path).convert('RGB')
-    orig_size = img.size # (W, H)
-    
-    # Preprocess (Convert to Tensor and add batch dimension)
-    img_tensor = TF.to_tensor(img).unsqueeze(0).to(device)
-    
-    # 4. Run Inference
-    print("Running inference through backbone...")
+    print("Running inference...")
     with torch.no_grad():
-        # Use AMP if configured for faster inference
-        with torch.autocast(device_type=device if 'cuda' in device else 'cpu', 
-                            dtype=torch.float16, 
-                            enabled=config.TRAINING.use_amp):
+        with torch.autocast(device_type=map_location.type, dtype=torch.float16, enabled=config.TRAINING.use_amp):
             preds = model(img_tensor)
             
-    # 5. Process Output
-    # Assuming single task for now (e.g., building) or taking the first task
-    task_name = list(config.LOSS.weights.keys())[0] 
+    # Get the logits for the first (primary) class
+    semantic_logits = preds['semantic'][:, 0:1] 
+    return semantic_logits
+
+def visualize_combined_prediction(image_path, bldg_model_path, bldg_config_path, road_model_path, road_config_path, device="cuda"):
+    """
+    Runs both the Building and Road models on the same image.
+    Resolves overlaps by picking the prediction with higher confidence.
+    """
+    map_location = torch.device(device if torch.cuda.is_available() else "cpu")
     
-    semantic_logits = preds['semantic'][:, 0:1] # Get first task logits
+    print(f"Loading test image: {os.path.basename(image_path)}")
+    img = Image.open(image_path).convert('RGB')
+    orig_size = img.size # (W, H)
+    img_tensor = TF.to_tensor(img).unsqueeze(0).to(map_location)
     
-    # Upsample back to original image size
-    logits_upsampled = torch.nn.functional.interpolate(
-        semantic_logits, 
-        size=(orig_size[1], orig_size[0]), 
-        mode='bilinear', 
-        align_corners=False
+    # 1. Get Building Predictions
+    print("--- Processing Building Model ---")
+    bldg_logits = load_and_infer(bldg_model_path, bldg_config_path, img_tensor, map_location)
+    
+    # 2. Get Road Predictions
+    print("--- Processing Road Model ---")
+    road_logits = load_and_infer(road_model_path, road_config_path, img_tensor, map_location)
+    
+    # 3. Upsample back to original image size
+    bldg_logits = torch.nn.functional.interpolate(
+        bldg_logits, size=(orig_size[1], orig_size[0]), mode='bilinear', align_corners=False
+    )
+    road_logits = torch.nn.functional.interpolate(
+        road_logits, size=(orig_size[1], orig_size[0]), mode='bilinear', align_corners=False
     )
     
-    # Convert logits to probabilities and then binary mask
-    prob = torch.sigmoid(logits_upsampled).cpu().squeeze().numpy()
-    binary_mask = prob > 0.5
+    # 4. Convert logits to probabilities
+    prob_b = torch.sigmoid(bldg_logits).cpu().squeeze().numpy()
+    prob_r = torch.sigmoid(road_logits).cpu().squeeze().numpy()
+    
+    # 5. Resolve overlaps: Keep the class with the highest probability
+    # Threshold at > 0.5 first
+    valid_b = prob_b > 0.5
+    valid_r = prob_r > 0.5
+    
+    # Final masks
+    mask_b = valid_b & (prob_b > prob_r)
+    mask_r = valid_r & (prob_r >= prob_b)
     
     # 6. Visualization
     img_np = np.array(img)
-    
-    # Create overlay (Red for building/road)
     overlay = img_np.copy()
-    overlay[binary_mask] = overlay[binary_mask] * 0.5 + np.array([255, 0, 0]) * 0.5
+    
+    # Buildings -> Red, Roads -> Blue
+    overlay[mask_b] = overlay[mask_b] * 0.5 + np.array([255, 0, 0]) * 0.5
+    overlay[mask_r] = overlay[mask_r] * 0.5 + np.array([0, 0, 255]) * 0.5
+    
+    # Create a combined categorical mask for display
+    combined_mask = np.zeros_like(prob_b)
+    combined_mask[mask_r] = 1 # Road is 1
+    combined_mask[mask_b] = 2 # Building is 2
     
     # Plotting
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig, axes = plt.subplots(1, 3, figsize=(20, 8))
     
     axes[0].imshow(img_np)
-    axes[0].set_title("Original Image", fontsize=14)
+    axes[0].set_title("1. Original Image", fontsize=16, fontweight='bold')
     axes[0].axis('off')
     
-    axes[1].imshow(binary_mask, cmap='gray')
-    axes[1].set_title(f"Predicted Mask ({task_name})", fontsize=14)
+    # Custom color map for the mask: 0=Black, 1=Blue (Road), 2=Red (Building)
+    from matplotlib.colors import ListedColormap
+    cmap = ListedColormap(['black', 'blue', 'red'])
+    axes[1].imshow(combined_mask, cmap=cmap, interpolation='nearest')
+    axes[1].set_title("2. Combined Network Output", fontsize=16, fontweight='bold')
     axes[1].axis('off')
     
     axes[2].imshow(overlay.astype(np.uint8))
-    axes[2].set_title("Overlay", fontsize=14)
+    axes[2].set_title("3. Final Resolved Overlay", fontsize=16, fontweight='bold')
     axes[2].axis('off')
+    
+    # Add a legend
+    red_patch = mpatches.Patch(color='red', label='Building')
+    blue_patch = mpatches.Patch(color='blue', label='Road')
+    plt.legend(handles=[red_patch, blue_patch], loc='lower right', fontsize=12)
     
     plt.tight_layout()
     plt.show()
@@ -99,10 +122,12 @@ def visualize_prediction(image_path, model_path, config_path, device="cuda"):
 # USAGE IN KAGGLE NOTEBOOK
 # ==========================================
 if __name__ == "__main__":
-    # Replace these paths with your actual Kaggle dataset/working paths
     IMAGE_PATH = "/kaggle/input/datasets/kushhhhhh16/svamitva-dataset/kaggle_svamitva/Svamitva/FilteredData/Images/some_test_image.png"
-    MODEL_PATH = "/kaggle/working/outputs_phase2_building/phase2_best.pt"
-    CONFIG_PATH = "src/configs/phase2_building.yaml"
     
-    # Run the visualization
-    # visualize_prediction(IMAGE_PATH, MODEL_PATH, CONFIG_PATH)
+    BLDG_MODEL = "/kaggle/working/outputs_phase2_building/phase2_best.pt"
+    BLDG_CONFIG = "src/configs/phase2_building.yaml"
+    
+    ROAD_MODEL = "/kaggle/working/outputs_phase2_road/phase2_best.pt"
+    ROAD_CONFIG = "src/configs/phase2_road.yaml"
+    
+    # visualize_combined_prediction(IMAGE_PATH, BLDG_MODEL, BLDG_CONFIG, ROAD_MODEL, ROAD_CONFIG)
