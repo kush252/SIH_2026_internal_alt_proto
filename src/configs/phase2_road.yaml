@@ -41,9 +41,10 @@ OPTIMIZER:
 LOSS:
   weights:
     road: 1.0
-  bce_weight: 1.0
-  dice_weight: 1.0
-  boundary_weight: 1.0
+  bce_weight: 0.2       # Drop this so it stops favoring the huge background
+  dice_weight: 3.0      # Boost this massively to force it to connect thin roads!
+  boundary_weight: 1.5  # Slightly boost this to keep road edges crisp
+
 
 SYSTEM:
   seed: 42
