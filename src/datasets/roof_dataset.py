@@ -22,17 +22,16 @@ class RoofCSVDataset(Dataset):
         filename_cols = ['filename', 'image_name', 'image', 'file_name', 'id']
         filename = None
         for col in filename_cols:
-            if col in row:
+            if col in row and not pd.isna(row[col]):
                 filename = str(row[col])
                 if not filename.endswith('.png') and not filename.endswith('.jpg'):
                     filename += '.png'
                 break
                 
         if not filename:
-            # Fallback: assume first column is filename
-            filename = str(row.iloc[0])
-            if not filename.endswith('.png') and not filename.endswith('.jpg'):
-                filename += '.png'
+            # Fallback: if filename column is completely empty, 
+            # assume images are named by their original CSV row index (0.png, 1.png, etc)
+            filename = f"{row.name}.png"
             
         img_path = os.path.join(self.img_dir, filename)
         
@@ -65,7 +64,7 @@ def get_roof_dataloaders(config):
     print(f"Loaded CSV with {len(df)} rows. Columns: {list(df.columns)}")
     
     # Map labels to 0-3 first to stratify properly
-    label_cols = ['label', 'material', 'roof_type', 'class', 'roof_material']
+    label_cols = ['material_class', 'label', 'material', 'roof_type', 'class', 'roof_material']
     label_col = None
     for col in label_cols:
         if col in df.columns:
