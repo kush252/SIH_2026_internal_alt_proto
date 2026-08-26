@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.metrics import f1_score
 from tqdm import tqdm
 
-from .checkpoint import save_checkpoint
+from .checkpoint import save_checkpoint, load_checkpoint
 
 class Phase3Trainer:
     def __init__(self, model, train_loader, val_loader, config, output_dir, class_weights=None, resume_path=None):
@@ -62,6 +62,17 @@ class Phase3Trainer:
         self.current_epoch = 0
         self.global_step = 0
         self.best_f1 = 0.0  # Track macro F1, not accuracy (imbalanced dataset)
+        
+        if resume_path and os.path.exists(resume_path):
+            print(f"Resuming training from checkpoint: {resume_path}")
+            self.current_epoch, self.global_step = load_checkpoint(
+                resume_path, self.model, self.optimizer, self.scheduler
+            )
+            # If resuming, we want to try loading the best F1 so we don't overwrite it unnecessarily
+            checkpoint_data = torch.load(resume_path, map_location='cpu')
+            if 'val_f1' in checkpoint_data:
+                self.best_f1 = checkpoint_data['val_f1']
+            print(f"Resumed at epoch {self.current_epoch}, step {self.global_step}")
         
     def train(self):
         print(f"Starting Phase 3 training for {self.config.TRAINING.epochs} epochs on {self.device}")
