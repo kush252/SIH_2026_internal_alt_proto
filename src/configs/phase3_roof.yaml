@@ -1,0 +1,42 @@
+DATA:
+  dataset_path: "d:/Kush/2nd Year/Hackathons/SIH/data/roof_crops"
+  image_size: 224
+  in_channels: 3
+
+MODEL:
+  encoder:
+    name: "resnet50"
+    pretrained: false  # Will be loaded from Phase 1 checkpoint
+    checkpoint_path: "d:/Kush/2nd Year/Hackathons/SIH_alt_archi/src/outputs/phase1_simsiam_encoder.pt"
+  
+AUGMENTATION:
+  color_jitter: 0.2
+  hflip_prob: 0.5
+  vflip_prob: 0.5
+  # 90deg: roof material is orientation-invariant in top-down drone imagery
+  random_rotation: 90
+
+TRAINING:
+  epochs: 50
+  batch_size: 64
+  num_workers: 4
+  use_amp: true
+  clip_grad: 1.0
+
+OPTIMIZER:
+  encoder_lr: 1e-4   # ResNet tolerates higher LR than ConvNeXt
+  head_lr: 1e-3
+  weight_decay: 5e-3  # ResNet less prone to overfitting, but still regularize
+  momentum: 0.9
+
+# Sqrt-softened class weights from xBD dataset distribution
+# Order: [RCC, TILED, TIN, OTHER]
+# Raw imbalance: OTHER=11.47x, TIN=0.55x (rarest)
+# After sqrt softening: keeps penalty proportional but not extreme
+CLASS_WEIGHTS:
+  weights: [3.38, 1.23, 0.74, 0.82]
+
+SYSTEM:
+  seed: 42
+  device: "cuda"
+  output_dir: "outputs_phase3_roof"
