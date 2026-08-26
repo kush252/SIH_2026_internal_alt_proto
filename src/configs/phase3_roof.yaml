@@ -1,5 +1,6 @@
 DATA:
   dataset_path: "d:/Kush/2nd Year/Hackathons/SIH/data/roof_crops"
+  csv_path: "d:/Kush/2nd Year/Hackathons/SIH/data/roofnet_metadata.csv"
   image_size: 224
   in_channels: 3
 

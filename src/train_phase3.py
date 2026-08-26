@@ -20,6 +20,7 @@ def main():
     parser = argparse.ArgumentParser(description="Phase 3: Roof Classification Training")
     parser.add_argument('--config', type=str, default=r"configs\phase3_roof.yaml")
     parser.add_argument('--dataset_path', type=str, help="Path to roof crops dataset (overrides config)")
+    parser.add_argument('--csv_path', type=str, help="Path to metadata CSV file")
     parser.add_argument('--checkpoint_path', type=str, help="Path to Phase 1 encoder checkpoint")
     parser.add_argument('--output_dir', type=str, help="Path to save outputs")
     parser.add_argument('--batch_size', type=int, help="Override batch size")
@@ -34,6 +35,8 @@ def main():
     # Overrides
     if args.dataset_path:
         config.DATA.dataset_path = args.dataset_path
+    if args.csv_path:
+        config.DATA.csv_path = args.csv_path
     if args.checkpoint_path:
         config.MODEL.encoder.checkpoint_path = args.checkpoint_path
     if args.output_dir:
