@@ -29,9 +29,9 @@ class RoofCSVDataset(Dataset):
                 break
                 
         if not filename:
-            # Fallback: if filename column is completely empty, 
-            # assume images are named by their original CSV row index (0.png, 1.png, etc)
-            filename = f"{row.name}.png"
+            # We should have dropped NaNs in get_roof_dataloaders, but just in case:
+            print(f"Warning: Row {idx} has missing filename. Returning dummy image.")
+            return Image.new('RGB', (224, 224)), int(row['mapped_label'])
             
         img_path = os.path.join(self.img_dir, filename)
         
@@ -61,7 +61,21 @@ def get_roof_dataloaders(config):
         raise ValueError(f"CSV path {csv_path} not found. Please provide a valid config.DATA.csv_path or --csv_path")
         
     df = pd.read_csv(csv_path)
-    print(f"Loaded CSV with {len(df)} rows. Columns: {list(df.columns)}")
+    
+    # 0. DROP MISSING IMAGES (mimicking split.py logic)
+    initial_len = len(df)
+    filename_cols = ['filename', 'image_name', 'image', 'file_name', 'id']
+    actual_fname_col = None
+    for col in filename_cols:
+        if col in df.columns:
+            actual_fname_col = col
+            break
+            
+    if actual_fname_col:
+        df = df.dropna(subset=[actual_fname_col])
+        print(f"Dropped {initial_len - len(df)} missing images. Remaining: {len(df)}")
+    
+    print(f"Loaded CSV with {len(df)} valid rows. Columns: {list(df.columns)}")
     
     # Map labels to 0-3 first to stratify properly
     label_cols = ['material_class', 'label', 'material', 'roof_type', 'class', 'roof_material']
