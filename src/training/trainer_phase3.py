@@ -5,6 +5,7 @@ import os
 import json
 import numpy as np
 from sklearn.metrics import f1_score
+from tqdm import tqdm
 
 from .checkpoint import save_checkpoint
 
@@ -71,7 +72,9 @@ class Phase3Trainer:
             all_preds = []
             all_labels = []
             
-            for batch_idx, (images, labels) in enumerate(self.train_loader):
+            pbar = tqdm(self.train_loader, desc=f"Epoch {epoch+1}/{self.config.TRAINING.epochs} [Train]")
+            
+            for batch_idx, (images, labels) in enumerate(pbar):
                 images = images.to(self.device)
                 labels = labels.to(self.device)
                 
@@ -103,29 +106,36 @@ class Phase3Trainer:
                 all_preds.extend(predicted.cpu().numpy())
                 all_labels.extend(labels.cpu().numpy())
                 
+                # Update progress bar
+                running_acc = 100 * np.mean(np.array(all_preds) == np.array(all_labels))
+                pbar.set_postfix({'Loss': f"{loss_val:.4f}", 'Acc': f"{running_acc:.1f}%"})
+                
+                # Log to tensorboard every 10 steps (but don't print to console)
                 if self.global_step % 10 == 0:
-                    running_acc = 100 * np.mean(np.array(all_preds) == np.array(all_labels))
                     self.writer.add_scalar("Loss/train", loss_val, self.global_step)
                     self.writer.add_scalar("Accuracy/train", running_acc, self.global_step)
-                    print(f"Epoch [{epoch}/{self.config.TRAINING.epochs}] Step [{batch_idx}/{len(self.train_loader)}] Loss: {loss_val:.4f} Acc: {running_acc:.2f}%")
             
             avg_epoch_loss = epoch_loss / len(self.train_loader)
             train_acc = 100 * np.mean(np.array(all_preds) == np.array(all_labels))
             train_f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
-            print(f"==== Epoch {epoch} Train Loss: {avg_epoch_loss:.4f} Train Acc: {train_acc:.2f}% Train F1: {train_f1:.4f} ====")
             
-            epoch_record = {'epoch': epoch, 'train_loss': avg_epoch_loss, 'train_acc': train_acc, 'train_f1': train_f1}
+            # Print epoch summary
+            print(f"==== Epoch {epoch+1} Train | Loss: {avg_epoch_loss:.4f} | Acc: {train_acc:.2f}% | F1: {train_f1:.4f} ====")
+            
+            epoch_record = {'epoch': epoch+1, 'train_loss': avg_epoch_loss, 'train_acc': train_acc, 'train_f1': train_f1}
             
             # Val metric = macro F1 (not accuracy) because class imbalance makes accuracy misleading
             val_f1 = train_f1  # Default if no val set
             if self.val_loader:
-                val_loss, val_acc, val_f1 = self.evaluate()
+                val_loss, val_acc, val_f1 = self.evaluate(epoch)
                 self.writer.add_scalar("Loss/val", val_loss, epoch)
                 self.writer.add_scalar("Accuracy/val", val_acc, epoch)
                 self.writer.add_scalar("F1_macro/val", val_f1, epoch)
-                print(f"==== Epoch {epoch} Val Loss: {val_loss:.4f} Val Acc: {val_acc:.2f}% Val F1: {val_f1:.4f} ====")
+                print(f"==== Epoch {epoch+1} Val   | Loss: {val_loss:.4f} | Acc: {val_acc:.2f}% | F1: {val_f1:.4f} ====\n")
                 epoch_record.update({'val_loss': val_loss, 'val_acc': val_acc, 'val_f1': val_f1})
-            
+            else:
+                print() # Just a newline for spacing
+                
             self.history.append(epoch_record)
             with open(os.path.join(self.output_dir, 'history.json'), 'w') as f:
                 json.dump(self.history, f, indent=2)
@@ -146,14 +156,16 @@ class Phase3Trainer:
         print(f"Training complete. Best Val Macro F1: {self.best_f1:.4f}")
         
     @torch.no_grad()
-    def evaluate(self):
+    def evaluate(self, epoch):
         """Returns (val_loss, val_accuracy, val_macro_f1)."""
         self.model.eval()
         val_loss = 0.0
         all_preds = []
         all_labels = []
         
-        for images, labels in self.val_loader:
+        pbar = tqdm(self.val_loader, desc=f"Epoch {epoch+1}/{self.config.TRAINING.epochs} [Val]  ")
+        
+        for images, labels in pbar:
             images = images.to(self.device)
             labels = labels.to(self.device)
             
@@ -170,6 +182,9 @@ class Phase3Trainer:
             _, predicted = torch.max(logits.data, 1)
             all_preds.extend(predicted.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
+            
+            running_acc = 100 * np.mean(np.array(all_preds) == np.array(all_labels))
+            pbar.set_postfix({'Loss': f"{loss.item():.4f}", 'Acc': f"{running_acc:.1f}%"})
             
         val_acc = 100 * np.mean(np.array(all_preds) == np.array(all_labels))
         val_f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
